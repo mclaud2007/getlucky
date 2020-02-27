@@ -18,6 +18,7 @@ class GameController: UIViewController {
     @IBOutlet weak var labelGameOver: UILabel!
     @IBOutlet weak var buttonStartNewGame: UIButton!
     @IBOutlet weak var textGameScore: UILabel!
+    @IBOutlet weak var buttonReturnToMainMenu: UIButton!
     
     // MARK: Properties
     var gameService = Game.shared
@@ -56,6 +57,10 @@ class GameController: UIViewController {
         gameService.check(question: 4)
     }
     
+    @IBAction func returnToMainMenuClicked(_ sender: Any) {
+        navigationController?.popToRootViewController(animated: true)
+    }
+    
     // MARK: Answers and question
     fileprivate func checkAnswer(answer num: Int) {
         gameService.check(question: num)
@@ -72,6 +77,7 @@ class GameController: UIViewController {
     func initGameScreen () {
         labelGameOver.isHidden = true
         buttonStartNewGame.isHidden = true
+        buttonReturnToMainMenu.isHidden = true
         textGameScore.isHidden = true
         
         // Показываем вопрос и кнопки ответа
@@ -101,6 +107,7 @@ extension GameController: GameProto {
         labelGameOver.text = "GAME OVER"
         labelGameOver.isHidden = false
         buttonStartNewGame.isHidden = false
+        buttonReturnToMainMenu.isHidden = false
         
         textGameScore.text = "Your score is: \(String(Game.shared.total()))"
         textGameScore.isHidden = false
@@ -117,6 +124,7 @@ extension GameController: GameProto {
         labelGameOver.text = "YOU WIN"
         labelGameOver.isHidden = false
         buttonStartNewGame.isHidden = false
+        buttonReturnToMainMenu.isHidden = false
         
         textGameScore.text = "Your score is: \(String(Game.shared.total()))"
         textGameScore.isHidden = false

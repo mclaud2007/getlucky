@@ -8,7 +8,7 @@
 
 import Foundation
 
-class GameSession {
+class GameSession: Codable {
     var totalQuestions: Int = 0
     var answerQuestions: Int = 0
     var currentQuestion: Int = 0

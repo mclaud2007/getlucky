@@ -16,9 +16,28 @@ protocol GameProto {
     func getCorrectAnswer()
 }
 
+enum QuestionShowType {
+    case normal
+    case random
+}
+
 class Game {
     static var shared = Game()
-    var sessions: [GameSession]?
+    private let recordCaretaker = GameCaretaker()
+    private let usersQuestionCaretaker = UsersQuestionsCaretaker()
+    
+    var sessions: [GameSession]? {
+        didSet {
+            if let sessions = self.sessions {
+                do {
+                    try recordCaretaker.saveGame(sessions)
+                } catch {
+                    print("Can't save sessions")
+                }
+            }
+        }
+    }
+    
     var session: GameSession? {
         if let session = sessions {
             return session.last
@@ -27,16 +46,71 @@ class Game {
         }
     }
     
+    // Предустановленные вопросы
     var questions: [Question]?
+    
+    // Пользовательские вопросы
+    var userQuestions: [UsersQuestions] {
+        didSet {
+            if self.userQuestions.count > 0 {
+                do {
+                    try usersQuestionCaretaker.save(self.userQuestions)
+                } catch {
+                    print("Can't save users question")
+                }
+            }
+        }
+    }
+    
     var delegate: GameProto?
+    
+    // Настройка отображения вопросов
+    var questionShowType: QuestionShowType = .normal
+    
+    // Текущая стратегия отображения вопросов, в зависимости от настроек
+    var showQuestionStrategy: ShowQuestionStrategy {
+        switch self.questionShowType {
+        case .random:
+            return RandomStrategy()
+        default:
+            return NormalStrategy()
+        }
+    }
+    
+    private init () {
+        // Пытаемся восстановить сессии
+        do {
+            self.sessions = try recordCaretaker.loadGame()
+        } catch {
+            print("Can't load game sessions")
+        }
+        
+        // По-умолчанию пользовательские вопросы пустые
+        userQuestions = []
+        
+        // А также пытаемся восстановить пользовательские вопросы
+        do {
+            self.userQuestions = try usersQuestionCaretaker.load()
+        } catch {
+            print("Can't load users questions")
+        }
+    }
     
     public func start() {
         // Инициализируем новый пак вопросов
-        questions = [Question(text: "Первый вопрос", answers: ["Да", "Нет", "Не знаю", "Может быть"], correct: 3, price: 100),
+        var initQuestions = [Question(text: "Первый вопрос", answers: ["Да", "Нет", "Не знаю", "Может быть"], correct: 3, price: 100),
                      Question(text: "Второй вопрос", answers: ["Да", "Нет", "Не знаю", "Может быть"], correct: 3, price: 200),
                      Question(text: "Третий вопрос", answers: ["Да", "Нет", "Не знаю", "Может быть"], correct: 3, price: 300),
                      Question(text: "Четвертый вопрос", answers: ["Да", "Нет", "Не знаю", "Может быть"], correct: 3, price: 400),
                      Question(text: "Пятый вопрос", answers: ["Да", "Нет", "Не знаю", "Может быть"], correct: 3, price: 500)]
+        
+        // Если у нас есть пользовательские вопросы - добавим их к предустановленным
+        if userQuestions.count > 0 {
+            initQuestions = initQuestions + userQuestions
+        }
+        
+        // Перемещаем полученные вопросы
+        questions = showQuestionStrategy.shuffle(initQuestions)
         
         if let questions = questions {
             var totalPrice = 0
